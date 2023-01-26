@@ -6,7 +6,7 @@ require "open-uri"
 # config
 
 $access_token = ENV["ACCESS_TOKEN"]
-interval = 3000
+interval = 300
 spiegel_rss = "https://www.spiegel.de/schlagzeilen/index.rss"
 
 # fetching and parsing feed
