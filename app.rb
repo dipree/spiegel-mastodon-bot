@@ -9,6 +9,9 @@ $start_time = Time.now
 interval = 300
 spiegel_rss = "https://www.spiegel.de/schlagzeilen/index.rss"
 
+puts "[APP] Initializing"
+puts "\n"
+
 # Fetching and parsing feed
 def read_feed(url, interval)
     URI.open(url) do |rss|
