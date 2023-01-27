@@ -3,14 +3,13 @@ require "net/http"
 require "uri"
 require "open-uri"
 
-# config
-
+# Config
 $access_token = ENV["ACCESS_TOKEN"]
+$start_time = Time.now
 interval = 300
 spiegel_rss = "https://www.spiegel.de/schlagzeilen/index.rss"
 
-# fetching and parsing feed
-
+# Fetching and parsing feed
 def read_feed(url, interval)
     URI.open(url) do |rss|
         feed = RSS::Parser.parse(rss, false)
@@ -18,8 +17,10 @@ def read_feed(url, interval)
         puts "\n"
         feed.items.each do |item|
             date = item.pubDate.to_time
-            if date >= Time.now - interval
-                puts ""
+            time_difference = Time.now - interval
+            # Make sure no duplicates are posted when restarting the app
+            time_difference = $start_time if time_difference < $start_time
+            if date >= time_difference
                 puts "[SPIEGEL RSS] New article: #{item.title}"
                 description = item.description.slice(0, 140) + "..." if item.description.length > 140
                 puts "[MASTODON] Posting article"
@@ -32,8 +33,7 @@ def read_feed(url, interval)
     read_feed(url, interval)
 end
 
-# posting article
-
+# Posting article
 def post(description, link)
     uri = URI("https://mstdn.social/api/v1/statuses")
     req = Net::HTTP::Post.new(uri)
@@ -60,6 +60,5 @@ def post(description, link)
     puts "[MASTODON] Status: #{res.code} #{res.message}"
 end
 
-# start process
-
+# Start app
 read_feed(spiegel_rss, interval)
