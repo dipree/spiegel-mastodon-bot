@@ -1,7 +1,7 @@
 require "rss"
 require "net/http"
 require "uri"
-require "open-uri"
+require 'dotenv/load'
 
 # Config
 $access_token = ENV["ACCESS_TOKEN"]
@@ -14,8 +14,9 @@ puts "\n"
 
 # Fetching and parsing feed
 def read_feed(url, interval)
-    URI.open(url) do |rss|
-        feed = RSS::Parser.parse(rss, false)
+    response = Net::HTTP.get_response(URI(url))
+    if response.is_a?(Net::HTTPSuccess)
+        feed = RSS::Parser.parse(response.body, false)
         puts "[SPIEGEL RSS] Fetching feed"
         puts "\n"
         feed.items.each do |item|
@@ -33,6 +34,9 @@ def read_feed(url, interval)
                 puts "\n"
             end
         end
+    else
+        puts "[SPIEGEL RSS] Error " + response.code
+        puts "\n"
     end
     sleep(interval)
     read_feed(url, interval)
@@ -43,7 +47,6 @@ def post(description, link)
     uri = URI("https://mstdn.social/api/v1/statuses")
     req = Net::HTTP::Post.new(uri)
     req["Authorization"] = "Bearer #{$access_token}"
-
     req.set_form(
         [
             [
@@ -53,15 +56,12 @@ def post(description, link)
         ],
         "multipart/form-data"
     )
-
     req_options = {
         use_ssl: uri.scheme == "https"
     }
-
     res = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
         http.request(req)
     end
-
     puts "[MASTODON] Status: #{res.code} #{res.message}"
 end
 
